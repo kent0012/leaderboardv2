@@ -36,10 +36,11 @@ export default function GuestNavigationBar() {
                                 className="h-8 w-auto"
                             /> */}
                             <Link to="/" className="text-white text-lg font-bold">
-                                <h3 className='text-white'> SouthSide  {""}
-                                    <span className='text-yellow-500'>
-                                        La Familia
-                                    </span>
+                                <h3 className='text-white'>
+                                    <span className='text-yellow-500'> 
+                                        Southside     
+                                    </span> {""}
+                                        la Familia
                                 </h3>
                             </Link>
                         </div>

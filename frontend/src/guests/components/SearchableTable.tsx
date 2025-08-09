@@ -4,15 +4,16 @@ import clsx from "clsx";
 import { useEffect, useState, type ReactNode } from "react";
 import EmptyState from "../../components/common/EmptyState";
 
-interface TableHeader {
-    key: string;
+interface TableHeader<T extends object> {
+    key: keyof T | 'actions';
     label: string;
+    render?: (item: T, key: keyof T | 'actions') => React.ReactNode;
 }
 
 interface SearchableTableProps<T extends object> {
     data: T[];
     itemsPerPage?: number;
-    headers: TableHeader[];
+    headers: TableHeader<T>[];
     searchKeys: (keyof T)[];
 }
 
@@ -26,12 +27,10 @@ export default function SearchableTable<T extends object>({
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Debounce the search term
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
         }, 500);
-
         return () => {
             clearTimeout(handler);
         };
@@ -57,6 +56,42 @@ export default function SearchableTable<T extends object>({
         setCurrentPage(Math.max(1, Math.min(totalPages, page)));
     };
 
+    const getPageNumbers = () => {
+        const maxPagesToShow = 3; 
+        const pageNumbers = [];
+
+        if (totalPages <= maxPagesToShow) {
+            for (let i = 1; i <= totalPages; i++) {
+                pageNumbers.push(i);
+            }
+        } else {
+            const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+            const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+            if (startPage > 1) {
+                pageNumbers.push(1);
+                if (startPage > 2) {
+                    pageNumbers.push("...");
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                pageNumbers.push(i);
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    pageNumbers.push("...");
+                }
+                pageNumbers.push(totalPages);
+            }
+        }
+
+        return pageNumbers;
+    };
+
+    const pageNumbers = getPageNumbers();
+
     return (
         <>
             <div className="flex justify-between items-center mb-4">
@@ -77,8 +112,6 @@ export default function SearchableTable<T extends object>({
                         />
                     </div>
                 </Field>
-                {/* <FilterBox /> */}
-
             </div>
 
             <div className="mt-8 overflow-x-auto rounded-lg shadow-md">
@@ -87,7 +120,7 @@ export default function SearchableTable<T extends object>({
                         <tr>
                             {headers.map((header) => (
                                 <th
-                                    key={header.key}
+                                    key={String(header.key)}
                                     scope="col"
                                     className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400"
                                 >
@@ -105,36 +138,37 @@ export default function SearchableTable<T extends object>({
                                 >
                                     {headers.map((header) => (
                                         <td
-                                            key={`cell-${header.key}`}
+                                            key={`cell-${String(header.key)}`}
                                             className="whitespace-nowrap px-6 py-4 text-sm text-gray-300"
                                         >
-                                            {item[header.key as keyof T] as ReactNode}
+                                            {header.render
+                                                ? header.render(item, header.key)
+                                                : (
+                                                    (header.key in item)
+                                                        ? (item[header.key as keyof T] as ReactNode)
+                                                        : null
+                                                )
+                                            }
                                         </td>
                                     ))}
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td
-                                    colSpan={headers.length}
-                                    className="py-10"
-                                >
+                                <td colSpan={headers.length} className="py-10">
                                     <div className="flex justify-center items-center h-full w-full text-sm text-gray-400">
                                         <EmptyState
                                             message="There are no items in this list."
                                             buttonLink="/leaderboard"
                                         />
-
                                     </div>
                                 </td>
                             </tr>
-
                         )}
                     </tbody>
                 </table>
             </div>
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
                 <div className="mt-4 flex justify-center gap-2">
                     <button
@@ -144,20 +178,27 @@ export default function SearchableTable<T extends object>({
                     >
                         Previous
                     </button>
-                    {Array.from({ length: totalPages }, (_, i) => (
-                        <button
-                            key={i + 1}
-                            onClick={() => goToPage(i + 1)}
-                            className={clsx(
-                                "px-3 py-1 rounded text-sm",
-                                currentPage === i + 1
-                                    ? "bg-yellow-600 text-white"
-                                    : "bg-gray-700 text-white hover:bg-gray-600"
-                            )}
-                        >
-                            {i + 1}
-                        </button>
-                    ))}
+                    {/* Render page numbers based on the new logic */}
+                    {pageNumbers.map((page, i) =>
+                        typeof page === "number" ? (
+                            <button
+                                key={i}
+                                onClick={() => goToPage(page)}
+                                className={clsx(
+                                    "px-3 py-1 rounded text-sm",
+                                    currentPage === page
+                                        ? "bg-yellow-600 text-white"
+                                        : "bg-gray-700 text-white hover:bg-gray-600"
+                                )}
+                            >
+                                {page}
+                            </button>
+                        ) : (
+                            <span key={i} className="px-3 py-1 text-sm text-gray-400">
+                                {page}
+                            </span>
+                        )
+                    )}
                     <button
                         onClick={() => goToPage(currentPage + 1)}
                         disabled={currentPage === totalPages}

@@ -1,9 +1,11 @@
 export interface CardData {
-    winnerName: string;
+  id: number;
+    vendorName: string;
     description: string;
     totalValue: number;
     buttonText: string;
     monthlyRanking: string;
-      position?: 1 | 2 | 3;
+    created_at: string;
+    updated_at: string;
 
 }
