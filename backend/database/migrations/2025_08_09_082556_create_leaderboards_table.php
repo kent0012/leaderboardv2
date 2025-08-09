@@ -16,8 +16,6 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('description');
             $table->decimal('totalValue', 10, 2);
-            $table->string('buttonText');
-            $table->string('monthlyRanking');
             $table->timestamps();
         });
     }

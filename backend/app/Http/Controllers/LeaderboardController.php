@@ -23,24 +23,27 @@ class LeaderboardController extends Controller implements HasMiddleware
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {
-        $query = Leaderboard::query();
+{
+    $query = Leaderboard::with('user:id,name');
 
-        // filter by single date (exact match)
-        if ($request->has('date')) {
-            $query->whereDate('created_at', Carbon::parse($request->date));
-        }
+    // filter by date range
+    if ($request->has('start_date') && $request->has('end_date')) {
+        $start = Carbon::parse($request->start_date)->startOfDay();
+        $end = Carbon::parse($request->end_date)->endOfDay();
 
-        // filter by date range
-       if ($request->has('start_date') && $request->has('end_date')) {
-            $start = Carbon::parse($request->start_date)->startOfDay();
-            $end = Carbon::parse($request->end_date)->endOfDay();
-
-            $query->whereBetween('created_at', [$start, $end]);
-        }
-        return $query->get();
+        $query->whereBetween('created_at', [$start, $end]);
     }
 
+    // order by totalValue highest first
+    $query->orderBy('totalValue', 'desc');
+
+    // filter top 3 most purchased leaderboards
+    if ($request->has('top')) {
+        $query->take(3);
+    }
+
+    return $query->get();
+}
     /**
      * Store a newly created resource in storage.
      */
@@ -49,8 +52,6 @@ class LeaderboardController extends Controller implements HasMiddleware
         $fields = $request->validate([
             'description' => 'required|string|max:500',
             'totalValue' => 'required|numeric',
-            'buttonText' => 'required|string|max:100',
-            'monthlyRanking' => 'required|string|max:50',
         ]);
 
         $leaderboard =  $request->user()->leaderboard()->create($fields);
@@ -76,8 +77,6 @@ class LeaderboardController extends Controller implements HasMiddleware
         $fields = $request->validate([
             'description' => 'required|string|max:500',
             'totalValue' => 'required|numeric',
-            'buttonText' => 'required|string|max:100',
-            'monthlyRanking' => 'required|string|max:50',
         ]);
 
         $leaderboard->update($fields);

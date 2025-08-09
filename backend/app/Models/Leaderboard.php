@@ -11,14 +11,14 @@ class Leaderboard extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'description',
         'totalValue',
-        'buttonText',
-        'monthlyRanking',
     ];
 
     public function user() {
-        return $this->belonsgsTo(User::class);
+        return $this->belongsTo(User::class);
+
     }
 }
 
